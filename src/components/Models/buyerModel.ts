@@ -3,18 +3,10 @@ import { IEvents } from "../../components/base/Events";
 
 export class BuyerModel implements IBuyerModel {
   protected _buyer: IBuyer = {
-    payment: "",
+    payment: null,
     address: "",
     email: "",
     phone: "",
-  };
-  protected _order: IOrder = {
-    payment: "",
-    address: "",
-    email: "",
-    phone: "",
-    total: 0,
-    items: [],
   };
   protected events: IEvents;
 
@@ -33,42 +25,37 @@ export class BuyerModel implements IBuyerModel {
     }
   }
 
-  validationData(data: Record<keyof IBuyer, string>): boolean {
-    const isValidEmail = data.email.trim() !== "";
-    const isValidPhone = data.phone.trim() !== "";
-    const isValidAddress = data.address.trim() !== "";
-    const isValidPayment = data.payment !== "";
-
-    const isValid =
-      isValidEmail && isValidPhone && isValidAddress && isValidPayment;
-
-    if (!isValid) {
-      this.events.emit("validation:error", {
-        email: !isValidEmail,
-        phone: !isValidPhone,
-        address: !isValidAddress,
-        payment: !isValidPayment,
-      });
-    }
-
-    return isValid;
+  getBuyerData(): IBuyer {
+    return { ...this._buyer };
   }
 
-  getBuyerData(): IOrder {
-    return {
-      ...this._buyer,
-      total: this._order.total,
-      items: this._order.items,
-    };
+  validationData(): boolean {
+    const errors: Partial<Record<keyof IOrder, string>> = {};
+    if (!this._buyer.payment) {
+      errors.payment = "Необходимо указать способ оплаты";
+    }
+    if (!this._buyer.address) {
+      errors.address = "Необходимо ввести адрес доставки";
+    }
+
+    if (!this._buyer.email) {
+      errors.email = "Необходимо указать email";
+    }
+    if (!this._buyer.phone) {
+      errors.phone = "Необходимо указать телефон";
+    }
+
+    this.events.emit("formErrors:change", errors);
+    return Object.keys(errors).length === 0;
   }
 
   clear(): void {
     this._buyer = {
-      payment: "",
+      payment: null,
       address: "",
       email: "",
       phone: "",
     };
-    this.events.emit("buyer:data:cleared");
+    this.events.emit("buyer:data:cleared", this.getBuyerData());
   }
 }

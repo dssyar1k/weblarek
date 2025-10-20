@@ -1,13 +1,4 @@
-/*export type ApiPostMethods = "POST" | "PUT" | "DELETE";
-
-export interface IApi {
-  get<T extends object>(uri: string): Promise<T>;
-  post<T extends object>(
-    uri: string,
-    data: object,
-    method?: ApiPostMethods
-  ): Promise<T>;
-}*/
+import { EventEmitter } from "../components/base/Events";
 
 //Категории товара
 export type categoryProduct =
@@ -50,7 +41,7 @@ export interface IWebLarekApi {
 export type PaymentMethod = "cash" | "card";
 //Интерфейс описания покупателя
 export interface IBuyer {
-  payment: PaymentMethod | "";
+  payment: PaymentMethod | null;
   email: string;
   phone: string;
   address: string;
@@ -60,7 +51,7 @@ export interface IBuyer {
 export interface IBuyerModel {
   setData(data: keyof IBuyer, value: string): void;
   validationData(data: Record<keyof IBuyer, string>): boolean;
-  getBuyerData(): IOrder;
+  getBuyerData(): IBuyer;
   clear(): void;
 }
 

@@ -46,16 +46,16 @@ const testProductsec: IProduct = {
 };
 
 // Тесты
-console.log("Начальная корзина:", cartModel.getItems()); 
-console.log("Количество товаров:", cartModel.getTotalCount()); 
-console.log("Есть ли товар №1?", cartModel.hasItem("1")); 
-console.log("Общая сумма:", cartModel.getTotal()); 
+console.log("Начальная корзина:", cartModel.getItems());
+console.log("Количество товаров:", cartModel.getTotalCount());
+console.log("Есть ли товар №1?", cartModel.hasItem("1"));
+console.log("Общая сумма:", cartModel.getTotal());
 
 //Тест добавления товара
 cartModel.addProduct(testProduct);
 console.log("После добавления товара №1:", cartModel.getItems());
 console.log("Количество товаров:", cartModel.getTotalCount());
-console.log("Есть ли товар №1?", cartModel.hasItem("1")); 
+console.log("Есть ли товар №1?", cartModel.hasItem("1"));
 console.log("Общая сумма:", cartModel.getTotal());
 
 // // Добавляем ещё товар
@@ -68,10 +68,9 @@ console.log("Общая сумма:", cartModel.getTotal());
 // Удаляем товар
 cartModel.removeProduct("1");
 console.log("После удаления товара №1:", cartModel.getItems());
-console.log("Количество товаров:", cartModel.getTotalCount()); 
+console.log("Количество товаров:", cartModel.getTotalCount());
 console.log("Есть ли товар №1?", cartModel.hasItem("1"));
 console.log("Общая сумма:", cartModel.getTotal());
-
 
 api
   .getProducts()
@@ -96,4 +95,3 @@ api
   .catch((error: Error) => {
     console.error("Произошла ошибка при получении продуктов:", error.message);
   });
-
