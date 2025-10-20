@@ -85,11 +85,11 @@ items: IProduct[];
 
 ```
 export type categoryProduct =
-'софт-скил' |
-'другое' |
-'дополнительное' |
-'кнопка' |
-'хард-скил';
+	| 'софт-скил'
+	| 'другое'
+	| 'дополнительное'
+	| 'кнопка'
+	| 'хард-скил';
 
 Заказ, отправляемый из корзины на сервер
 
@@ -189,8 +189,8 @@ Presenter - презентер содержит основную логику п
 -getProducts(): IProduct[] - получение списка товаров
 -setProducts(products: IProduct[]): void - сохраняет списка товаров
 -getProduct(id:string): IProduct | undefined - получение товара по ID
--setSelectedProduct(product: IProduct): void - установка выбранного товара
--getSelectedProduct(): IProduct | null - получение выбранного товара
+-setPreview(product: IProduct): void - установка выбранного товара
+-getPreview(): IProduct | null - получение выбранного товара
 
 #### Класс CartModel
 Класс для работы с корзиной товаров.
@@ -204,9 +204,8 @@ Presenter - презентер содержит основную логику п
 -getTotalCount(): number- получить количество товаров в корзине
 -hasItem(id: string): boolean - узнать наличие товара
 -getTotalPrice(): number-получение общей стоимости товаров
-
--addItem(product: IProduct): void - добавление товара в корзину
--removeItem(id:string): void - удаление товара из корзины
+-addProduct(product: IProduct): void - добавление товара в корзину
+-removeProduct(id:string): void - удаление товара из корзины
 -clear(): void - очистка корзины
 
 #### Класс BuyerModel
