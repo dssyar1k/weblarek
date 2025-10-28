@@ -12,6 +12,15 @@
     flex-grow: 1;
   }
 
+  &__list:not(:has(> *))::before {
+    content: "Корзина пуста";
+    opacity: 0.3;
+    display: block;
+    text-align: left;
+    font-style: regular;
+    font-weight: 400;
+  }
+
   &__item {
     border-bottom: 1px solid $primary;
     padding: 1.5rem 0;
@@ -30,7 +39,7 @@
     }
 
     &-delete {
-      @include mixins.icon(2rem, 'trash');
+      @include mixins.icon(2rem, "trash");
       @include mixins.link($hover, white);
       opacity: 0.5;
       margin-left: 4rem;
