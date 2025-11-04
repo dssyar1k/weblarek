@@ -1,13 +1,20 @@
-import { IBuyerModel, IOrder, IBuyer, PaymentMethod } from "../../types";
+import {
+  IBuyerModel,
+  IOrder,
+  IBuyer,
+  PaymentMethod,
+  FormErrors,
+} from "../../types";
 import { IEvents } from "../../components/base/Events";
 
 export class BuyerModel implements IBuyerModel {
   protected _buyer: IBuyer = {
     payment: null,
-    address: "",
+    adress: "",
     email: "",
     phone: "",
   };
+  formErrors: FormErrors = {};
   protected events: IEvents;
 
   constructor(events: IEvents) {
@@ -34,8 +41,8 @@ export class BuyerModel implements IBuyerModel {
     if (!this._buyer.payment) {
       errors.payment = "Необходимо указать способ оплаты";
     }
-    if (!this._buyer.address) {
-      errors.address = "Необходимо ввести адрес доставки";
+    if (!this._buyer.adress) {
+      errors.adress = "Необходимо ввести адрес доставки";
     }
 
     if (!this._buyer.email) {
@@ -52,10 +59,11 @@ export class BuyerModel implements IBuyerModel {
   clear(): void {
     this._buyer = {
       payment: null,
-      address: "",
+      adress: "",
       email: "",
       phone: "",
     };
+    this.formErrors = {};
     this.events.emit("buyer:data:cleared", this.getBuyerData());
   }
 }

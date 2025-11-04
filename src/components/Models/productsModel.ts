@@ -9,13 +9,13 @@ export class ProductsModel implements IProductsModel {
     this.events = events;
   }
   // Получение списка товаров
-  getProducts(): IProduct[] | undefined {
+  getProducts(): IProduct[] {
     return this._products;
   }
   // Сохранение массива товаров
-  setProducts(products: IProduct[]): void {
+  setProducts(products: IProduct[]) {
     this._products = products;
-    this.events.emit("items:change");
+    this.events.emit("items:change", { items: products });
   }
   // Получение товара по ID
   getProductById(productId: string): IProduct | undefined {

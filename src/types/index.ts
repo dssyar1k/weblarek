@@ -1,5 +1,3 @@
-import { EventEmitter } from "../components/base/Events";
-
 //Категории товара
 export type categoryProduct =
   | "софт-скил"
@@ -20,7 +18,7 @@ export interface IProduct {
 
 //Интерфейс каталога карточек товара
 export interface IProductsModel {
-  getProducts(): IProduct[] | undefined;
+  getProducts(): IProduct[]; //Список товаров
   setProducts(products: IProduct[]): void;
   getProductById(productId: string): IProduct | undefined;
   setPreview(product: IProduct): void;
@@ -44,7 +42,7 @@ export interface IBuyer {
   payment: PaymentMethod | null;
   email: string;
   phone: string;
-  address: string;
+  adress: string;
 }
 
 //Интерфейс модели покупателя
@@ -53,6 +51,7 @@ export interface IBuyerModel {
   validationData(data: Record<keyof IBuyer, string>): boolean;
   getBuyerData(): IBuyer;
   clear(): void;
+  formErrors: FormErrors;
 }
 
 //Заказ, отправляемый из корзины на сервер
@@ -93,16 +92,16 @@ export type ICard = Pick<IProduct, "id" | "title" | "price"> &
 
 //Интерфейс корзины
 export interface ICart {
-  items: HTMLElement[];
+  items: (HTMLElement | null)[];
   total: number;
 }
 
 //Интерфейс модели корзины
 export interface ICartModel {
-  getItems(): Map<string, IProduct>;
-  getTotalCount(): number;
+  getItems(): ICard[];
+  getTotalCount(): number; //количество товаров в корзине
   hasItem(id: string): boolean;
-  getTotal(): number;
+  getTotal(): number; //общая сумма в корзине
   addProduct(product: IProduct): void;
   removeProduct(id: string): void;
   clear(): void;
@@ -113,6 +112,15 @@ export interface IForm {
   valid: boolean;
   errors: string[];
 }
+export interface IFormContactsData {
+  email: string;
+  phone: string;
+}
+
+export interface IFormOrder {
+  adress: string;
+  payment: PaymentMethod;
+}
 
 // Интерфейс всплывающего окна после успешного оформления заказа
 export interface ISuccess {
@@ -121,6 +129,10 @@ export interface ISuccess {
 
 export interface ISuccessActions {
   onClick: () => void;
+}
+
+export interface ICardActions {
+  onClick: (event: MouseEvent) => void;
 }
 
 export interface IWebLarekAPI {

@@ -1,5 +1,5 @@
 import { ICart } from "../../types";
-import { ensureElement } from "../../utils/utils";
+import { ensureElement, createElement } from "../../utils/utils";
 import { Component } from "../base/Component";
 import { EventEmitter } from "../base/Events";
 
@@ -8,15 +8,47 @@ export class Cart extends Component<ICart> {
   protected totalElement: HTMLElement;
   protected buttonElement: HTMLElement;
 
-  private getElement(selector: string): HTMLElement {
-    const element = this.container.querySelector(selector);
-    if (!element) {
-      throw new Error(`Элемент ${selector} не найден`);
+  constructor(container: HTMLElement, protected events: EventEmitter) {
+    super(container);
+
+    this.listElement = ensureElement(".basket__list", this.container);
+    this.totalElement = ensureElement(".basket__price", this.container);
+    this.buttonElement = ensureElement(".basket__button", this.container);
+
+    if (this.buttonElement) {
+      this.buttonElement.addEventListener("click", () => {
+        events.emit("order:open");
+      });
     }
-    return element as HTMLElement; // TypeScript всё ещё требует утверждения, т.к. querySelector возвращает Element
+
+    this.items = [];
   }
 
-  constructor(container: HTMLElement, protected events: EventEmitter) {
+  set items(items: HTMLElement[]) {
+    if (items.length) {
+      this.listElement.replaceChildren(...items);
+    } else {
+      this.listElement.replaceChildren(
+        createElement("p", {
+          textContent: "Корзина пуста",
+        })
+      );
+    }
+  }
+
+  set selected(items: string[]) {
+    if (items.length) {
+      this.setDisabled(this.buttonElement, false);
+    } else {
+      this.setDisabled(this.buttonElement, true);
+    }
+  }
+
+  set total(total: number) {
+    this.setText(this.totalElement, `${total} синапсов`);
+  }
+}
+/*constructor(container: HTMLElement, protected events: EventEmitter) {
     super(container);
     // Инициализация DOM-элементов
     this.listElement = ensureElement<HTMLElement>(
@@ -69,15 +101,18 @@ export class Cart extends Component<ICart> {
     this.listElement.replaceChildren(...items);
   }
 
-  set selected(items: string[]) {
-    if (items.length) {
-      this.setDisabled(this.buttonElement, false);
+set selected(items: string[] | undefined | null) {
+    if (!items || items.length === 0) {
+        this.setDisabled(this.buttonElement, true);
     } else {
-      this.setDisabled(this.buttonElement, true);
+        this.setDisabled(this.buttonElement, false);
     }
-  }
-
-  set total(total: number) {
-    this.setText(this.totalElement, `${total} синапсов`);
-  }
 }
+
+set total(total: number | undefined | null) {
+    this.setText(
+        this.totalElement,
+        total == null ? '0 синапсов' : `${total} синапсов`
+    );
+}
+}*/
