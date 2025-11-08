@@ -1,4 +1,4 @@
-//Категории товара
+// Категории товара, доступные в системе
 export type categoryProduct =
   | "софт-скил"
   | "другое"
@@ -6,23 +6,51 @@ export type categoryProduct =
   | "кнопка"
   | "хард-скил";
 
-//Описание товара (из API)
+// Описание товара, получаемое из API
 export interface IProduct {
   id: string;
   description: string;
   image: string;
   title: string;
-  category: string;
+  category: categoryProduct;
   price: number | null;
 }
 
-//Интерфейс каталога карточек товара
+// Интерфейс модели каталога товаров
 export interface IProductsModel {
-  getProducts(): IProduct[]; //Список товаров
+  getProducts(): IProduct[] | undefined; //Список товаров
   setProducts(products: IProduct[]): void;
   getProductById(productId: string): IProduct | undefined;
   setPreview(product: IProduct): void;
   getPreview(): IProduct | null;
+}
+
+// Интерфейс модели покупателя
+export interface IBuyerModel {
+  setData(data: keyof IBuyer, value: string | PaymentMethod): void;
+  validate(data: Record<keyof IBuyer, string>): boolean;
+  get buyerData(): IBuyer;
+  clear(): void;
+  formErrors: FormErrors;
+}
+export type PaymentMethod = "cash" | "card";
+//Интерфейс описания покупателя
+export interface IBuyer {
+  payment?: PaymentMethod;
+  email: string;
+  phone: string;
+  address: string;
+}
+
+//Интерфейс модели корзины
+export interface ICartModel {
+  getProducts(): Map<string, IProduct>;
+  getTotalCount(): number; //количество товаров в корзине
+  hasItem(id: string): boolean;
+  getTotal(): number; //общая сумма в корзине
+  addProduct(product: IProduct): void;
+  removeProduct(id: string): void;
+  clearCart(): void;
 }
 
 //Список товаров (из API)
@@ -35,23 +63,6 @@ export interface IWebLarekApi {
   getProducts(): Promise<IProduct[]>;
   getProduct(id: string): Promise<IProduct>;
   createOrder(order: IOrder): Promise<IOrderResult>;
-}
-export type PaymentMethod = "cash" | "card";
-//Интерфейс описания покупателя
-export interface IBuyer {
-  payment: PaymentMethod | null;
-  email: string;
-  phone: string;
-  adress: string;
-}
-
-//Интерфейс модели покупателя
-export interface IBuyerModel {
-  setData(data: keyof IBuyer, value: string): void;
-  validationData(data: Record<keyof IBuyer, string>): boolean;
-  getBuyerData(): IBuyer;
-  clear(): void;
-  formErrors: FormErrors;
 }
 
 //Заказ, отправляемый из корзины на сервер
@@ -92,19 +103,8 @@ export type ICard = Pick<IProduct, "id" | "title" | "price"> &
 
 //Интерфейс корзины
 export interface ICart {
-  items: (HTMLElement | null)[];
+  items: HTMLElement[];
   total: number;
-}
-
-//Интерфейс модели корзины
-export interface ICartModel {
-  getItems(): ICard[];
-  getTotalCount(): number; //количество товаров в корзине
-  hasItem(id: string): boolean;
-  getTotal(): number; //общая сумма в корзине
-  addProduct(product: IProduct): void;
-  removeProduct(id: string): void;
-  clear(): void;
 }
 
 //Интерфейс для форм
@@ -118,8 +118,8 @@ export interface IFormContactsData {
 }
 
 export interface IFormOrder {
-  adress: string;
-  payment: PaymentMethod;
+  address: string;
+  payment: PaymentMethod | null;
 }
 
 // Интерфейс всплывающего окна после успешного оформления заказа

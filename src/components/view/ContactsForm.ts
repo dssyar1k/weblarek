@@ -1,6 +1,7 @@
 import { IFormContactsData } from "../../types";
 import { EventEmitter } from "../base/Events";
 import { Form } from "./Form";
+import { ensureElement } from "../../utils/utils"; // Добавьте импорт
 
 export class ContactsForm extends Form<IFormContactsData> {
   private emailElement: HTMLInputElement;
@@ -9,18 +10,15 @@ export class ContactsForm extends Form<IFormContactsData> {
   constructor(container: HTMLFormElement, events: EventEmitter) {
     super(container, events);
 
-    const email = container.querySelector('input[name="email"]');
-    const phone = container.querySelector('input[name="phone"]');
-
-    if (!email || !(email instanceof HTMLInputElement)) {
-      throw new Error("Поле ввода email не найдено");
-    }
-    if (!phone || !(phone instanceof HTMLInputElement)) {
-      throw new Error("Поле ввода номера телефона не найдено");
-    }
-
-    this.emailElement = email;
-    this.phoneElement = phone;
+    // Заменяем querySelector → ensureElement
+    this.emailElement = ensureElement(
+      'input[name="email"]',
+      this.container
+    ) as HTMLInputElement;
+    this.phoneElement = ensureElement(
+      'input[name="phone"]',
+      this.container
+    ) as HTMLInputElement;
   }
 
   set email(value: string) {
@@ -29,13 +27,5 @@ export class ContactsForm extends Form<IFormContactsData> {
 
   set phone(value: string) {
     this.phoneElement.value = value;
-  }
-
-  get email(): string {
-    return this.emailElement.value;
-  }
-
-  get phone(): string {
-    return this.phoneElement.value;
   }
 }

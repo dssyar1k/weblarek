@@ -1,30 +1,18 @@
-import { CardProduct } from "./CardProduct";
-import { ICardActions, ICard } from "../../types";
 import { ensureElement } from "../../utils/utils";
-
+import { CardProduct } from "./CardProduct";
+import { ICardActions } from "../../types";
+//Компонент карточки товара в корзине
 export class CardCart extends CardProduct {
   protected indexElement: HTMLElement;
-  protected buttonElement: HTMLButtonElement;
-
-  constructor(container: HTMLElement, protected actions?: ICardActions) {
-    super(container);
-
-    this.buttonElement = ensureElement(
-      ".card__button",
-      this.container
-    ) as HTMLButtonElement;
+//Конструктор компонента карточки товара в корзине
+  constructor(container: HTMLElement, actions?: ICardActions) {
+    super(container, actions);
+// Находим элемент для отображения индекса товара в корзине
     this.indexElement = ensureElement(".basket__item-index", this.container);
   }
-
-  set button(value: string) {
-    this.setText(this.buttonElement, value);
-  }
-
-  render(data?: Partial<ICard>, index?: number): HTMLElement {
-    super.render(data);
-    if (this.indexElement && index !== undefined) {
-      this.indexElement.textContent = index.toString();
-    }
-    return this.container;
+//Сеттер для установки порядкового номера товара в корзине
+  set index(value: number) {
+     // Преобразуем число в строку и устанавливаем текст элемента
+    this.setText(this.indexElement, value.toString());
   }
 }

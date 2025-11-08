@@ -1,58 +1,66 @@
-import { IEvents } from "../base/Events";
+import { EventEmitter } from "../base/Events";
 import { Component } from "../base/Component";
 import { ensureElement } from "../../utils/utils";
 import { IForm } from "../../types";
-
+//Базовый класс для форм
 export class Form<T> extends Component<IForm> {
-  protected submitElement: HTMLButtonElement;
-  protected errorsElement: HTMLElement;
-
-  constructor(protected container: HTMLFormElement, protected events: IEvents) {
-    super(container);
-
-    this.submitElement = ensureElement(
+  protected buttonElement: HTMLButtonElement;
+  protected _errors: HTMLElement;
+  protected events: EventEmitter;
+  //Конструктор формы
+  constructor(container: HTMLFormElement, events: EventEmitter) {
+    super(container as HTMLElement);
+    this.events = events;
+    // Проверка типа контейнера
+    if (!(container instanceof HTMLFormElement)) {
+      throw new Error("Контейнер должен быть HTMLFormElement");
+    }
+    // Получение ключевых элементов формы
+    this.buttonElement = ensureElement<HTMLButtonElement>(
       "button[type=submit]",
-      container
-    ) as HTMLButtonElement;
-    this.errorsElement = ensureElement(".form__errors", container);
+      this.container
+    );
 
-    this.initEventListeners();
+    this._errors = ensureElement(".form__errors", this.container);
+    // Обработчик ввода данных
+    this.container.addEventListener("input", (e: Event) => {
+      const target = e.target as HTMLInputElement;
+      if (!target.name) return;
+      const field = target.name as keyof T;
+      const value = target.value;
+      this.inputChange(field, value);
+    });
+    // Обработчик отправки формы
+    this.container.addEventListener("submit", (e: Event) => {
+      e.preventDefault();
+      const form = this.container as HTMLFormElement;
+      this.events.emit(`${form.name}:submit`);
+    });
+    // Дополнительная ссылка на кнопку отправки
+    this._submit = ensureElement<HTMLButtonElement>(
+      "button[type=submit]",
+      this.container
+    );
   }
-
-  private initEventListeners(): void {
-    this.container.addEventListener("input", this.handleInput.bind(this));
-    this.container.addEventListener("submit", this.handleSubmit.bind(this));
-  }
-
-  private handleInput(e: Event): void {
-    const target = e.target as HTMLInputElement;
-    if (!target.name) return; // защита от элементов без name
-
-    const field = target.name as keyof T;
-    const value = target.value;
-    this.onInputChange(field, value);
-  }
-
-  private handleSubmit(e: Event): void {
-    e.preventDefault();
-    this.events.emit(`${this.container.name}:submit`);
-  }
-
-  protected onInputChange(field: keyof T, value: string): void {
-    this.events.emit(`${this.container.name}.${String(field)}:change`, {
+  //Обрабатываем изменение значения поля формы
+  protected inputChange(field: keyof T, value: string) {
+    const form = this.container as HTMLFormElement;
+    this.events.emit(`${form.name}.${String(field)}:change`, {
       field,
       value,
     });
   }
-
+  // Дополнительная ссылка на кнопку отправки (дублирует buttonElement)
+  protected _submit: HTMLButtonElement;
+  //Устанавливаем состояние валидности формы
   set valid(value: boolean) {
-    this.submitElement.disabled = !value;
+    this._submit.disabled = !value;
   }
 
-  set errors(value: string) {
-    this.setText(this.errorsElement, value || ""); // защита от undefined
+  set errors(list: string[]) {
+    this.setText(this._errors, list.join(", "));
   }
-  //Рендер формы
+
   render(state: Partial<T> & IForm) {
     const { valid, errors, ...inputs } = state;
     super.render({ valid, errors });
