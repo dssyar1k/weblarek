@@ -27,30 +27,19 @@ export interface IProductsModel {
 
 // Интерфейс модели покупателя
 export interface IBuyerModel {
-  setData(data: keyof IBuyer, value: string | PaymentMethod): void;
-  validate(data: Record<keyof IBuyer, string>): boolean;
-  get buyerData(): IBuyer;
-  clear(): void;
-  formErrors: FormErrors;
+  payment: PaymentMethod;
+  address: string;
+  email: string;
+  phone: string;
 }
-export type PaymentMethod = "cash" | "card";
+export type PaymentMethod = "card" | "cash" | "";
+
 //Интерфейс описания покупателя
 export interface IBuyer {
-  payment?: PaymentMethod;
+  payment: PaymentMethod;
   email: string;
   phone: string;
   address: string;
-}
-
-//Интерфейс модели корзины
-export interface ICartModel {
-  getProducts(): Map<string, IProduct>;
-  getTotalCount(): number; //количество товаров в корзине
-  hasItem(id: string): boolean;
-  getTotal(): number; //общая сумма в корзине
-  addProduct(product: IProduct): void;
-  removeProduct(id: string): void;
-  clearCart(): void;
 }
 
 //Список товаров (из API)
@@ -59,20 +48,11 @@ export interface IProductsList {
   items: IProduct[];
 }
 
-export interface IWebLarekApi {
-  getProducts(): Promise<IProduct[]>;
-  getProduct(id: string): Promise<IProduct>;
-  createOrder(order: IOrder): Promise<IOrderResult>;
-}
-
 //Заказ, отправляемый из корзины на сервер
 export interface IOrder extends IBuyer {
   total: number;
   items: string[];
 }
-
-//Ошибка в форме
-export type FormErrors = Partial<Record<keyof IOrder, string>>;
 
 //Ответ сервера о заказе
 export interface IOrderResult {
@@ -95,22 +75,18 @@ export interface IModalView {
   content: HTMLElement;
 }
 
-// Тип для карточки товара
-export type ICard = Pick<IProduct, "id" | "title" | "price"> &
-  Partial<Pick<IProduct, "category" | "description" | "image">> & {
-    button?: string;
-  };
+export interface ICard extends Pick<IProduct, "title" | "price"> {}
 
 //Интерфейс корзины
 export interface ICart {
-  items: HTMLElement[];
+  itemsList: HTMLElement[];
   total: number;
 }
 
 //Интерфейс для форм
 export interface IForm {
   valid: boolean;
-  errors: string[];
+  errors: string;
 }
 export interface IFormContactsData {
   email: string;
@@ -135,7 +111,7 @@ export interface ICardActions {
   onClick: (event: MouseEvent) => void;
 }
 
-export interface IWebLarekAPI {
+export interface IWebLarekApi {
   getProducts(): Promise<IProduct[]>;
   getProduct(id: string): Promise<IProduct>;
   createOrder(order: IOrder): Promise<IOrderResult>;

@@ -1,66 +1,29 @@
-import { ICardActions, ICard } from "../../types";
-import { EventEmitter } from "../base/Events";
+import { ICard } from "../../types";
 import { Component } from "../base/Component";
 import { ensureElement } from "../../utils/utils";
 
-//Компонент карточки товара
-
+//Базовый компонент карточки товара
 export class CardProduct extends Component<ICard> {
-  protected events: EventEmitter; // Эмиттер событий для внутренней коммуникации
-  protected titleElement: HTMLElement; // Элемент для отображения названия товара
-  protected priceElement: HTMLElement; // Элемент для отображения цены товара
-  protected buttonElement: HTMLButtonElement | null = null; // Кнопка действия (может отсутствовать)
+  protected titleEl: HTMLElement;
+  protected priceEl: HTMLElement;
 
-  //Конструктор компонента карточки товара
+  //Создаёт экземпляр карточки товара
+  constructor(container: HTMLElement) {
+    super(container);
 
-  constructor(container: HTMLElement, actions?: ICardActions) {
-    super(container); // Инициализация базового класса
-
-    this.events = new EventEmitter(); // Создание эмиттера событий
-
-    // Получение DOM-элементов внутри карточки
-    this.titleElement = ensureElement(".card__title", this.container); // Заголовок товара
-    this.priceElement = ensureElement(".card__price", this.container); // Цена товара
-
-    // Поиск кнопки действия: сначала основная кнопка, затем кнопка удаления
-    const button = this.container.querySelector(".card__button");
-    const deleteButton = this.container.querySelector(".basket__item-delete");
-    this.buttonElement = (button || deleteButton) as HTMLButtonElement | null;
-
-    // Настройка обработчика клика, если передан action
-    if (actions?.onClick) {
-      container.addEventListener("click", (event: MouseEvent) => {
-        if (this.buttonElement) {
-          // Проверяем, что клик был по кнопке или внутри неё
-          if (
-            event.target === this.buttonElement ||
-            (this.buttonElement.contains(event.target as Node) &&
-              event.currentTarget !== this.buttonElement)
-          ) {
-            actions.onClick(event); // Вызываем обработчик при клике по кнопке
-          }
-        } else {
-          // Если кнопки нет, обрабатываем клик по всей карточке
-          actions.onClick(event);
-        }
-      });
-    }
+    // Находим элементы внутри контейнера карточки
+    this.titleEl = ensureElement(".card__title", container);
+    this.priceEl = ensureElement(".card__price", container);
   }
-
-  //Сеттер для установки названия товара
+  //Устанавливает название товара
   set title(value: string) {
-    this.setText(this.titleElement, value); // Обновляем текст в элементе заголовка
+    this.titleEl.textContent = value.trim();
   }
 
-  //Сеттер для установки цены товара
-
+  /**
+   * Устанавливает цену товара.
+   * Если цена null, отображает "Бесценно"*/
   set price(value: number | null) {
-    // Формируем текстовое представление цены
-    this.setText(this.priceElement, value ? `${value} синапсов` : "Бесценно");
-
-    // Если цена отсутствует (null) и кнопка есть, блокируем её
-    if (this.buttonElement && !value) {
-      this.setDisabled(this.buttonElement, true);
-    }
+    this.priceEl.textContent = value ? `${value} синапсов` : "Бесценно";
   }
 }

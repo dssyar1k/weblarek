@@ -20,30 +20,20 @@ import { ProductsModel } from "./components/Models/productsModel";
 import { ensureElement, cloneTemplate } from "./utils/utils";
 
 //Типы
-import {
-  IProduct,
-  PaymentMethod,
-  IFormOrder,
-  IBuyer,
-  IFormContactsData,
-} from "./types";
+import { IProduct, PaymentMethod, IBuyer } from "./types";
 import { FormOrder } from "./components/view/OrderForm";
 import { BuyerModel } from "./components/Models/buyerModel";
-//Инициализация глобального эмиттера событий
-const events = new EventEmitter();
-//Создание экземпляра API‑клиента для взаимодействия с сервером
-const api = new WebLarekApi(CDN_URL, API_URL);
-const header = new Header(document.body, events);
 
-//Инициализация основных UI‑компонентов
-const gallery = new Gallery(document.body, events);
+const events = new EventEmitter();
+
+const api = new WebLarekApi(CDN_URL, API_URL);
+const header = new Header(events, ensureElement<HTMLElement>(".header"));
+
+const gallery = new Gallery(ensureElement<HTMLElement>(".gallery"));
 const productsModel = new ProductsModel(events);
 const modalContainer = document.querySelector(".modal") as HTMLElement;
-const pageWrapper = ensureElement(".page__wrapper") as HTMLElement;
-// Инициализация модального окна
 const modal = new Modal(modalContainer, events);
 
-//Загрузка шаблонов компонентов из DOM по идентификаторам
 const cardCatalogTemplate = ensureElement<HTMLTemplateElement>(
   settings.templates.cardCatalog
 );
@@ -66,40 +56,36 @@ const successTemplate = ensureElement<HTMLTemplateElement>(
   settings.templates.success
 );
 
-//Инициализация моделей данных
 const cartModel = new CartModel(events);
 const buyerModel = new BuyerModel(events);
-//Создание экземпляров компонентов интерфейса на основе шаблонов
+
 const cartContainer = cloneTemplate<HTMLElement>(cartTemplate);
 const orderContainer = cloneTemplate<HTMLFormElement>(orderTemplate);
 const contactsContainer = cloneTemplate<HTMLFormElement>(contactsTemplate);
-//Инициализация экрана успеха с обработчиком закрытия
+
 const success = new SuccessOrder(cloneTemplate(successTemplate), {
   onClick: () => {
     modal.close();
   },
 });
-//Создание экземпляров UI‑компонентов
+
 const cart = new Cart(cartContainer, events);
 const formOrder = new FormOrder(orderContainer, events);
 const contactsForm = new ContactsForm(contactsContainer, events);
 
-// Обработчик загрузки товаров с защитой от undefined
-events.on("items:change", (event: unknown) => {
-  // Проверяем, что event — объект и имеет поле items
-  if (!event || typeof event !== "object" || !("items" in event)) {
-    console.warn(
-      "Событие 'items:change' получено с некорректными данными",
-      event
-    );
-    return;
+function updateButton(card: CardPreview, product: IProduct) {
+  const cartcontent = cartModel.hasItem(product.id);
+  if (!product.price) {
+    card.button("Недоступно", true);
+  } else if (cartcontent) {
+    card.button("Удалить из корзины", false);
+  } else {
+    card.button("Купить", false);
   }
-  const items = (event as { items: IProduct[] }).items;
-  if (!items || items.length === 0) {
-    console.warn("Нет товаров для отображения");
-    return;
-  }
-  gallery.catalog = items.map((item) => {
+}
+
+events.on("items:change", () => {
+  const items = productsModel.getProducts().map((item) => {
     const card = new CardCatalog(cloneTemplate(cardCatalogTemplate), {
       onClick: () => {
         events.emit("card:select", item);
@@ -107,211 +93,222 @@ events.on("items:change", (event: unknown) => {
     });
     return card.render(item);
   });
+  gallery.render({ catalog: items });
 });
 
-//Обработчик выбора товара
-events.on("card:select", (item: IProduct) => {
-  // Логика при выборе карточки
-  productsModel.setPreview(item);
-});
-//Обработчик изменения предварительного просмотра товара
-events.on("preview:changed", (item: IProduct) => {
-  //Вспомогательная функция для отображения карточки товара в модальном окне
-  const showItem = (item: IProduct) => {
-    //Создаём экземпляр карточки товара для предпросмотра
-    const cardPreview = new CardPreview(cloneTemplate(cardPreviewTemplate), {
-      onClick: () => {
-        // Проверяем, есть ли товар в корзине
-        if (cartModel.hasItem(item.id)) {
-          // Если есть — удаляем из корзины
-          cartModel.removeProduct(item.id);
-        } else {
-          // Если нет — добавляем в корзину
-          cartModel.addProduct(item);
-        }
-        // Обновляем превью товара в модели (может изменить состояние кнопки)
-        productsModel.setPreview(item);
-      },
-    });
-    // Отображаем карточку товара в модальном окне
+events.on("preview:changed", () => {
+  // Получаем текущий товар для предпросмотра из модели
+  const product = productsModel.getPreview();
+
+  // Создаём новый экземпляр компонента предпросмотра товара
+  const cardPreview = new CardPreview(
+    cloneTemplate(cardPreviewTemplate),
+    events
+  );
+
+  // Если товар доступен — отображаем его в модальном окне
+  if (product) {
+    // Рендерим компонент с данными товара и помещаем в модальное окно
     modal.render({
-      content: cardPreview.render({
-        id: item.id,
-        title: item.title,
-        image: item.image,
-        price: item.price,
-        category: item.category,
-        description: item.description,
-        button: cartModel.hasItem(item.id) ? "Удалить из корзины" : "В корзину",
-      }),
+      content: cardPreview.render({ ...product }),
     });
-  };
-  /**
-   * Логика обработки события:
-   * - Если item передан (не null/undefined) — показываем карточку товара
-   * - Если item не передан — закрываем модальное окно
-   */
-  if (item) {
-    showItem(item);
-  } else {
-    modal.close();
+    modal.open();
+    // Обновляем состояние кнопки в компоненте предпросмотра
+    updateButton(cardPreview, product);
   }
 });
-//Обработчик выбора товара
+
 events.on("card:select", (item: IProduct) => {
   productsModel.setPreview(item);
 });
-// Обработчик изменения состояния корзины (добавление/удаление товара)
-events.on("basket:change", () => {
-  // Обновляем счётчик товаров в шапке сайта
-  header.counter = cartModel.getTotalCount();
-  // Получаем массив товаров из модели корзины
-  const itemsArray = Array.from(cartModel.getProducts().values());
-  // Формируем список карточек товаров для отображения в корзине
-  cart.items = itemsArray.map((item, index) => {
-    // Создаём карточку товара с обработчиком удаления
-    const card = new CardCart(cloneTemplate(cardCartTemplate), {
-      onClick: () => {
-        cartModel.removeProduct(item.id);
-      },
-    });
-    // Рендерим карточку товара
-    const element = card.render({
-      id: item.id,
-      title: item.title,
-      price: item.price,
-    });
 
-    // Устанавливаем порядковый номер товара в корзине (начиная с 1)
-    const indexElement = element.querySelector(".basket__item-index");
-    if (indexElement) {
-      indexElement.textContent = String(index + 1);
-    }
+events.on("preview:click", () => {
+  const product = productsModel.getPreview();
 
-    return element;
-  });
+  // Если предварительный просмотр пуст — выходим
+  if (!product) return;
 
-  // Обновляем общую сумму товаров в корзине
-  cart.total = cartModel.getTotal();
+  // Проверяем наличие товара в корзине и выполняем соответствующее действие
+  if (!cartModel.hasItem(product.id)) {
+    cartModel.addProduct(product);
+  } else {
+    cartModel.removeProduct(product);
+  }
+  modal.close();
 });
-// Обработчик открытия корзины — отображает корзину в модальном окне
+
 events.on("basket:open", () => {
+  // Рендерим содержимое корзины и передаём его в модальное окно
   modal.render({
     content: cart.render(),
   });
+
+  // Открываем модальное окно с содержимым корзины
+  modal.open();
 });
-// Обработчик открытия модального окна — блокирует фон страницы
-events.on("modal:open", () => {
-  pageWrapper.classList.add("page__wrapper_locked");
+
+events.on("basket:change", () => {
+  // Обновляем счётчик товаров в шапке
+  header.counter = cartModel.getTotalCount();
+
+  // Формируем список элементов корзины
+  const itemsList = cartModel.getItems().map((product, index) => {
+    // Создаём карточку товара для корзины с обработчиком удаления
+    const card = new CardCart(cloneTemplate(cardCartTemplate), {
+      onClick: () => {
+        cartModel.removeProduct(product);
+      },
+    });
+
+    // Устанавливаем порядковый номер товара в корзине (начиная с 1)
+    card.index = index + 1;
+
+    // Рендерим карточку товара и возвращаем полученный элемент
+    return card.render(product);
+  });
+
+  // Получаем общую стоимость товаров в корзине
+  const total = cartModel.getTotal();
+
+  // Рендерим содержимое корзины с обновлёнными данными
+  cart.render({
+    itemsList,
+    total,
+  });
 });
-// Обработчик закрытия модального окна — снимает блокировку фона
-events.on("modal:close", () => {
-  pageWrapper.classList.remove("page__wrapper_locked");
-});
-// Обработчик открытия формы заказа — отображает форму в модальном окне
+
+events.on(
+  "buyer:data:change",
+  (data: { field: keyof IBuyer; value: string }) => {
+    // Получаем результаты валидации всех полей покупателя
+    const { payment, address, email, phone } = buyerModel.validate();
+
+    // Получаем актуальные данные покупателя из модели
+    const buyerData = buyerModel.buyerData();
+
+    // Если изменилось поле оплаты или адреса — обновляем форму заказа
+    if (data.field === "payment" || data.field === "address") {
+      formOrder.render({
+        payment: buyerData.payment,
+        address: buyerData.address,
+        valid: !payment && !address,
+
+        // Собираем сообщения об ошибках в одну строку через запятую
+        errors: Object.values({ payment, address })
+          .filter(Boolean) // Оставляем только непустые значения
+          .join(", "),
+      });
+    }
+
+    // Если изменилось email или телефон — обновляем форму контактов
+    if (["email", "phone"].includes(data.field)) {
+      contactsForm.render({
+        email: buyerData.email,
+        phone: buyerData.phone,
+        valid: !email && !phone,
+
+        // Собираем сообщения об ошибках в одну строку через запятую
+        errors: Object.values({ email, phone })
+          .filter(Boolean) // Оставляем только непустые значения
+          .join(", "),
+      });
+    }
+  }
+);
+
 events.on("order:open", () => {
+  // Получаем результаты валидации полей оплаты и адреса
+  const { payment, address } = buyerModel.validate();
+
+  // Получаем актуальные данные покупателя
+  const buyerData = buyerModel.buyerData();
+
+  // Рендерим модальное окно с формой заказа
   modal.render({
     content: formOrder.render({
-      payment: undefined,
-      address: "",
-      valid: false,
-      errors: [],
+      // Передаём в форму текущие значения из модели
+      payment: buyerData.payment,
+      address: buyerData.address,
+
+      // Устанавливаем валидность формы
+      valid: !payment && !address,
+
+      // Инициализируем поле ошибок пустой строкой (нет текущих ошибок)
+      errors: "",
     }),
   });
 });
-// Обработчик изменений в полях формы заказа (регулярное выражение для всех полей заказа)
-events.on(
-  /^order\..*:change/,
-  ({ field, value }: { field: keyof IFormOrder; value: string }) => {
-    buyerModel.setData(field, value as PaymentMethod);
-  }
-);
-// Обработчик изменений в полях контактной формы (регулярное выражение для полей контактов)
-events.on(
-  /^contacts\..*:change/,
-  ({ field, value }: { field: keyof IFormContactsData; value: string }) => {
-    buyerModel.setData(field as keyof (IFormOrder & IFormContactsData), value);
-  }
-);
-// Обработчик обновления данных покупателя — синхронизирует форму заказа с моделью
-events.on("buyer:data:updated", () => {
-  //Проверяем валидность формы заказа (отсутствие ошибок для payment и address)
-  const orderValid =
-    !buyerModel.formErrors.payment && !buyerModel.formErrors.address;
 
-  //Собираем массив сообщений об ошибках
-  const orderErrors = Object.values({
-    payment: buyerModel.formErrors.payment,
-    address: buyerModel.formErrors.address,
-  }).filter((e): e is string => Boolean(e));
+events.on("form:change", (data: { field: keyof IBuyer; value: string }) => {
+  // Обрабатываем изменение поля в форме заказа
+  // В зависимости от имени поля обновляем соответствующее свойство в модели покупателя
+  switch (data.field) {
+    case "payment":
+      // Устанавливаем метод оплаты (с явным приведением типа)
+      buyerModel.setPayment(data.value as PaymentMethod);
+      break;
 
-  // Обновляем отображение формы заказа
-  formOrder.render({
-    payment: buyerModel.buyerData.payment,
-    address: buyerModel.buyerData.address,
-    valid: orderValid,
-    errors: orderErrors,
-  });
+    case "address":
+      // Обновляем адрес доставки
+      buyerModel.setAddress(data.value);
+      break;
+
+    case "email":
+      // Обновляем email покупателя
+      buyerModel.setEmail(data.value);
+      break;
+
+    case "phone":
+      // Обновляем номер телефона покупателя
+      buyerModel.setPhone(data.value);
+      break;
+  }
 });
-// Обработчик ошибок валидации — обновляет состояние форм при наличии ошибок
-events.on(
-  "validation:error",
-  (errors: Partial<IFormOrder & IFormContactsData>) => {
-    const { payment, address, email, phone } = errors;
-
-    // Обновляем состояние формы заказа
-    formOrder.valid = !payment && !address;
-    formOrder.errors = [payment, address]
-      .filter(Boolean)
-      .filter((error) => typeof error === "string");
-
-    contactsForm.valid = !email && !phone;
-    contactsForm.errors = [phone, email]
-      .filter(Boolean)
-      .filter((error) => typeof error === "string");
-  }
-);
 
 events.on("order:submit", () => {
+  // Получаем результаты валидации контактных данных (email и телефона)
+  const { email, phone } = buyerModel.validate();
+
+  // Извлекаем актуальные данные покупателя из модели
+  const buyerData = buyerModel.buyerData();
+
+  // Рендерим модальное окно с формой контактов
   modal.render({
     content: contactsForm.render({
-      email: "",
-      phone: "",
-      valid: false,
-      errors: [],
+      // Передаём текущие значения email и телефона из модели
+      email: buyerData.email,
+      phone: buyerData.phone,
+
+      // Определяем валидность формы
+      valid: !email && !phone,
+
+      // Инициализируем поле ошибок пустой строкой
+      errors: "",
     }),
   });
-});
-
-events.on("formErrors:change", (errors: Partial<IBuyer>) => {
-  const { payment, address, email, phone } = errors;
-  formOrder.valid = !payment && !address;
-  formOrder.errors = Object.values({ payment, address }).filter(
-    (i): i is string => !!i
-  ); // Фильтр + тип-гард
-
-  contactsForm.valid = !email && !phone;
-  contactsForm.errors = Object.values({ phone, email }).filter(
-    (i): i is string => !!i
-  );
 });
 
 events.on("contacts:submit", () => {
-  const order = {
-    ...buyerModel.buyerData,
+  // Формируем данные заказа на основе текущих моделей
+  const dataOrder = {
+    ...buyerModel.buyerData(),
     total: cartModel.getTotal(),
-    items: Array.from(cartModel.getProducts().keys()),
+    items: cartModel.getItems().map((product) => product.id),
   };
+
+  // Отправляем заказ на сервер через API
   api
-    .createOrder(order)
+    .createOrder(dataOrder)
     .then((result) => {
       modal.render({
         content: success.render({
           total: result.total,
         }),
       });
-
+      // Очищаем корзину после успешного оформления заказа
       cartModel.clearCart();
+
+      // Сбрасываем данные покупателя
       buyerModel.clear();
     })
     .catch((err) => {

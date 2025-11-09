@@ -1,10 +1,12 @@
 import { ISuccess, ISuccessActions } from "../../types";
 import { Component } from "../base/Component";
 import { ensureElement } from "../../utils/utils";
+
 //Компонент успешного оформления заказа
 export class SuccessOrder extends Component<ISuccess> {
   protected totalElement: HTMLElement;
   protected buttonElement: HTMLElement;
+
   //Конструктор компонента
   constructor(container: HTMLElement, actions: ISuccessActions) {
     super(container);

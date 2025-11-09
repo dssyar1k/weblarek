@@ -1,40 +1,55 @@
 import { EventEmitter } from "../base/Events";
-import { PaymentMethod, IFormOrder, IForm } from "../../types";
+import { PaymentMethod, IFormOrder } from "../../types";
 import { Form } from "./Form";
+import { ensureElement } from "../../utils/utils";
 //Компонент формы заказа
-export class FormOrder extends Form<IFormOrder> implements IForm {
-  protected paymentButtons: HTMLButtonElement[]; // Кнопки выбора способа оплаты
-  protected adressElement: HTMLInputElement; // Поле ввода адреса доставки
+export class FormOrder extends Form<IFormOrder> {
+  protected paymentCashElement: HTMLButtonElement;
+  protected paymentCardElement: HTMLButtonElement; // Кнопка выбора способа оплаты
+  protected addressElement: HTMLInputElement; // Поле ввода адреса доставки
   //Конструктор формы заказа
   constructor(container: HTMLFormElement, events: EventEmitter) {
     super(container, events);
 
     // Получаем кнопки выбора способа оплаты по атрибутам name
-    this.paymentButtons = Array.from(
-      this.container.querySelectorAll(
-        'button[name="card"], button[name="cash"]'
-      )
-    );
-    // Получаем поле ввода адреса
-    this.adressElement = this.container.querySelector('input[name="address"]')!;
+    this.paymentCashElement = ensureElement(
+      ".button_alt[name=cash]",
+      this.container
+    ) as HTMLButtonElement;
+    this.paymentCardElement = ensureElement(
+      ".button_alt[name=card]",
+      this.container
+    ) as HTMLButtonElement;
+    this.addressElement = this.container.querySelector(
+      'input[name="address"]'
+    )!;
 
     // Настраиваем обработчики кликов для кнопок оплаты
-    this.paymentButtons.forEach((button) => {
-      button.addEventListener("click", () => {
-        const method = button.name as PaymentMethod;
-        this.inputChange("payment", method);
-      });
+    this.paymentCardElement.addEventListener("click", () => {
+      this.payment = "card";
+      this.inputChange("payment", "card");
+    });
+    this.paymentCashElement.addEventListener("click", () => {
+      this.payment = "cash";
+      this.inputChange("payment", "cash");
     });
   }
 
   //Сеттер для установки значения поля адреса
   set address(value: string) {
-    this.adressElement.value = value;
+    this.addressElement.value = value;
   }
 
-  //Переопределённый метод рендера формы
-  render(state: Partial<IFormOrder> & IForm): HTMLFormElement {
-    const result = super.render(state) as HTMLFormElement;
-    return result;
+  set payment(value: PaymentMethod) {
+    this.toggleClass(
+      this.paymentCardElement,
+      "button_alt-active",
+      value === "card"
+    );
+    this.toggleClass(
+      this.paymentCashElement,
+      "button_alt-active",
+      value === "cash"
+    );
   }
 }

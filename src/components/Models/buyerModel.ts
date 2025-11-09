@@ -1,134 +1,71 @@
-import { IBuyerModel, IBuyer, PaymentMethod, FormErrors } from "../../types";
+import { IBuyer, PaymentMethod } from "../../types";
 import { IEvents } from "../../components/base/Events";
 
-/*Модель данных покупателя
-Отвечает за хранение, валидацию и управление данными покупателя в процессе оформления заказа
+/**
+ * Модель данных покупателя
+ * Отвечает за хранение, валидацию и управление данными покупателя в процессе оформления заказа
  */
-export class BuyerModel implements IBuyerModel {
-  protected _buyer: IBuyer = {
-    payment: undefined,
-    address: "",
-    email: "",
-    phone: "",
-  };
-
-  formErrors: FormErrors = {};
+export class BuyerModel {
+  protected payment: PaymentMethod = "";
+  protected address: string = "";
+  protected email: string = "";
+  protected phone: string = "";
   protected events: IEvents;
 
-  //Конструктор модели покупателя
-
+  /** Конструктор модели покупателя */
   constructor(events: IEvents) {
     this.events = events;
   }
 
-  //Возвращает текущие данные покупателя (копия)
-
-  get buyerData(): IBuyer {
-    return { ...this._buyer };
-  }
-
-  //Устанавливает отдельное поле данных покупателя
-
-  setData(data: keyof IBuyer, value: string | PaymentMethod): void {
-    if (data === "payment") {
-      if (typeof value === "string" && ["cash", "card"].includes(value)) {
-        this._buyer[data] = value as PaymentMethod;
-      }
-    } else {
-      this._buyer[data] = value as string;
-    }
-
-    this.validate();
-    this.events.emit("buyer:data:updated", this._buyer);
+  //Возвращает текущие данные покупателя
+  buyerData(): IBuyer {
+    return {
+      payment: this.payment,
+      address: this.address,
+      email: this.email,
+      phone: this.phone,
+    };
   }
 
   //Валидирует основные обязательные поля покупателя
+  validate(): { [key: string]: string } {
+    const errors: { [key: string]: string } = {};
 
-  validate(): boolean {
-    const errors: FormErrors = {};
-    const { payment, address } = this._buyer;
+    if (!this.payment) errors.payment = "Необходимо выбрать способ оплаты";
+    if (!this.address.trim()) errors.address = "Необходимо указать адрес";
+    if (!this.email.trim()) errors.email = "Не указан email";
+    if (!this.phone.trim()) errors.phone = "Не указан телефон";
 
-    // Валидация способа оплаты
-    if (!payment) {
-      errors.payment = "Необходимо указать способ оплаты";
-    }
-
-    // Валидация адреса
-    if (!address || address.trim() === "") {
-      errors.address = "Необходимо указать адрес";
-    }
-
-    const isValid = Object.keys(errors).length === 0;
-    this.formErrors = errors;
-
-    this.events.emit("validation:error", this.formErrors);
-    return isValid;
+    return errors;
   }
 
-  // Очищает все данные покупателя и ошибки валидации
+  //Устанавливает способ оплаты
+  setPayment(payment: PaymentMethod): void {
+    this.payment = payment;
+    this.events.emit("buyer:data:change", { field: "payment", value: payment });
+  }
+  //Устанавливает адрес доставки
+  setAddress(address: string): void {
+    this.address = address;
+    this.events.emit("buyer:data:change", { field: "address", value: address });
+  }
+  //Устанавливает email покупателя
+  setEmail(email: string): void {
+    this.email = email;
+    this.events.emit("buyer:data:change", { field: "email", value: email });
+  }
+  //Устанавливает телефон покупателя
+  setPhone(phone: string): void {
+    this.phone = phone;
+    this.events.emit("buyer:data:change", { field: "phone", value: phone });
+  }
 
+  /** Очищает все данные покупателя и ошибки валидации */
   clear(): void {
-    this._buyer = {
-      payment: undefined,
-      address: "",
-      email: "",
-      phone: "",
-    };
-
-    this.formErrors = {};
-    this.events.emit("buyer:data:cleared");
-  }
-
-  //Валидирует полный набор данных покупателя
-
-  validationData(data: Record<keyof IBuyer, string>): boolean {
-    this.formErrors = {};
-
-    for (const key of Object.keys(data) as Array<keyof IBuyer>) {
-      const value = data[key];
-
-      switch (key) {
-        case "payment":
-          if (!value || !["cash", "card"].includes(value)) {
-            this.formErrors.payment = "Некорректный способ оплаты";
-          }
-          break;
-
-        case "address":
-          if (!value || value.trim() === "") {
-            this.formErrors.address = "Адрес не может быть пустым";
-          }
-          break;
-
-        case "email":
-          if (value && !this.validateEmail(value)) {
-            this.formErrors.email = "Некорректный email";
-          }
-          break;
-
-        case "phone":
-          if (value && !this.validatePhone(value)) {
-            this.formErrors.phone = "Некорректный номер телефона";
-          }
-          break;
-      }
-    }
-
-    this.events.emit("validation:error", this.formErrors);
-    return Object.keys(this.formErrors).length === 0;
-  }
-
-  //Проверяет корректность email-адреса
-
-  private validateEmail(email: string): boolean {
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    return emailRegex.test(email);
-  }
-
-  //Проверяет корректность номера телефона
-
-  private validatePhone(phone: string): boolean {
-    const phoneRegex = /^\+?\d{10,15}$/;
-    return phoneRegex.test(phone);
+    this.payment = "";
+    this.address = "";
+    this.email = "";
+    this.phone = "";
+    this.events.emit("buyer:data:change");
   }
 }

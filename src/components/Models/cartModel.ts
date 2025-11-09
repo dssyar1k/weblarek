@@ -1,65 +1,58 @@
-import { ICartModel, IProduct } from "../../types";
+import { IProduct } from "../../types";
 import { IEvents } from "../../components/base/Events";
 
 /**
  * Модель корзины покупок
  * Управляет коллекцией товаров в корзине, обеспечивает базовые операции.
  */
-export class CartModel implements ICartModel {
-  protected items: Map<string, IProduct> = new Map();
-  events: IEvents;
+export class CartModel {
+  protected itemsList: IProduct[];
+  protected events: IEvents;
 
   //Конструктор модели корзины
 
-  constructor(events: IEvents) {
+  constructor(events: IEvents, items: IProduct[] = []) {
     this.events = events;
+    this.itemsList = items;
   }
 
   //Возвращает полную коллекцию товаров в корзине
 
-  getProducts(): Map<string, IProduct> {
-    return this.items;
+  getItems(): IProduct[] {
+    return this.itemsList;
+  }
+
+  getTotalCount(): number {
+    return this.itemsList.length;
   }
 
   //Добавляет товар в корзину
 
   addProduct(product: IProduct): void {
-    if (product.price === null) {
-      return;
-    }
-    this.items.set(product.id, product); // Сохраняем полный объект товара
-    this.events.emit("basket:change", this.getProducts());
+    this.itemsList.push(product);
+    this.events.emit("basket:change");
   }
 
   //Удаляет товар из корзины по ID
 
-  removeProduct(id: string): void {
-    this.items.delete(id);
-    this.events.emit("basket:change", this.getProducts());
+  removeProduct(product: IProduct): void {
+    this.itemsList = this.itemsList.filter((p) => p.id !== product.id);
+    this.events.emit("basket:change");
   }
 
   clearCart(): void {
-    this.items.clear();
-    this.events.emit("basket:change", this.getProducts());
-  }
-
-  //Возвращает количество товаров в корзине
-
-  getTotalCount(): number {
-    return this.items.size;
+    this.itemsList = [];
+    this.events.emit("basket:change");
   }
 
   //Проверяем наличие товара в корзине
   hasItem(id: string): boolean {
-    return this.items.has(id);
+    return this.itemsList.some((product) => product.id === id);
   }
 
   //Рассчитываем общую стоимость товаров в корзине
 
   getTotal(): number {
-    return Array.from(this.items.values()).reduce((total, item) => {
-      // Проверяем, что price не null перед добавлением к сумме
-      return item.price !== null ? total + item.price : total;
-    }, 0);
+    return this.itemsList.reduce((sum, p) => sum + (p.price || 0), 0);
   }
 }

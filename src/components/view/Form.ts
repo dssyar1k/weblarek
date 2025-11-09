@@ -2,69 +2,56 @@ import { EventEmitter } from "../base/Events";
 import { Component } from "../base/Component";
 import { ensureElement } from "../../utils/utils";
 import { IForm } from "../../types";
-//Базовый класс для форм
-export class Form<T> extends Component<IForm> {
-  protected buttonElement: HTMLButtonElement;
-  protected _errors: HTMLElement;
-  protected events: EventEmitter;
-  //Конструктор формы
+
+// Базовый класс для форм
+export class Form<T> extends Component<IForm & T> {
+  protected buttonElement: HTMLButtonElement; // Кнопка отправки формы
+  protected _errors: HTMLElement; // Элемент для отображения ошибок валидации
+  protected events: EventEmitter; // Эмиттер событий для коммуникации
+
+  //Создаёт экземпляр формы
   constructor(container: HTMLFormElement, events: EventEmitter) {
     super(container as HTMLElement);
     this.events = events;
-    // Проверка типа контейнера
+
+    // Проверяем, что контейнер действительно является формой
     if (!(container instanceof HTMLFormElement)) {
       throw new Error("Контейнер должен быть HTMLFormElement");
     }
-    // Получение ключевых элементов формы
+
+    // Находим кнопку отправки и контейнер для ошибок в DOM
     this.buttonElement = ensureElement<HTMLButtonElement>(
       "button[type=submit]",
       this.container
     );
-
     this._errors = ensureElement(".form__errors", this.container);
-    // Обработчик ввода данных
-    this.container.addEventListener("input", (e: Event) => {
+
+    // Обработчик отправки формы (предотвращает стандартное поведение браузера)
+    this.container.addEventListener("submit", (e) => {
+      e.preventDefault();
+      this.events.emit(`${(this.container as HTMLFormElement).name}:submit`);
+    });
+
+    // Обработчик изменений полей формы (эмитит событие при вводе)
+    this.container.addEventListener("input", (e) => {
       const target = e.target as HTMLInputElement;
-      if (!target.name) return;
-      const field = target.name as keyof T;
-      const value = target.value;
+      const field = target.name as keyof T; // Имя поля как ключ типа T
+      const value = target.value; // Значение поля
       this.inputChange(field, value);
     });
-    // Обработчик отправки формы
-    this.container.addEventListener("submit", (e: Event) => {
-      e.preventDefault();
-      const form = this.container as HTMLFormElement;
-      this.events.emit(`${form.name}:submit`);
-    });
-    // Дополнительная ссылка на кнопку отправки
-    this._submit = ensureElement<HTMLButtonElement>(
-      "button[type=submit]",
-      this.container
-    );
   }
-  //Обрабатываем изменение значения поля формы
+
+  //Обрабатывает изменение значения поля формы
   protected inputChange(field: keyof T, value: string) {
-    const form = this.container as HTMLFormElement;
-    this.events.emit(`${form.name}.${String(field)}:change`, {
-      field,
-      value,
-    });
+    this.events.emit("form:change", { field, value });
   }
-  // Дополнительная ссылка на кнопку отправки (дублирует buttonElement)
-  protected _submit: HTMLButtonElement;
-  //Устанавливаем состояние валидности формы
+
+  //Устанавливает состояние валидности формы
   set valid(value: boolean) {
-    this._submit.disabled = !value;
+    this.buttonElement.disabled = !value;
   }
-
-  set errors(list: string[]) {
-    this.setText(this._errors, list.join(", "));
-  }
-
-  render(state: Partial<T> & IForm) {
-    const { valid, errors, ...inputs } = state;
-    super.render({ valid, errors });
-    Object.assign(this, inputs);
-    return this.container;
+  //Отображает сообщения об ошибках валидации
+  set errors(value: string) {
+    this._errors.textContent = value.trim();
   }
 }

@@ -7,7 +7,7 @@ export class Header extends Component<IHeader> {
   protected counterElement: HTMLElement;
   protected cartButton: HTMLButtonElement;
 
-  constructor(container: HTMLElement, protected events: IEvents) {
+  constructor(protected events: IEvents, container: HTMLElement) {
     super(container);
     // Получаем элемент счётчика товаров в корзине
     this.counterElement = ensureElement(".header__basket-counter", container);
@@ -23,6 +23,6 @@ export class Header extends Component<IHeader> {
   }
   //Сеттер для обновления счётчика товаров в корзине
   set counter(value: number) {
-    this.setText(this.counterElement, String(value));
+    this.counterElement.textContent = String(value);
   }
 }

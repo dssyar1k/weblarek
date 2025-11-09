@@ -1,6 +1,8 @@
 import { CardProduct } from "./CardProduct";
-import { categoryProduct, ICardActions } from "../../types";
+import { categoryProduct } from "../../types";
 import { ensureElement } from "../../utils/utils";
+import { IEvents } from "../base/Events";
+
 //Компонент предварительного просмотра товара
 export class CardPreview extends CardProduct {
   protected imageElement: HTMLImageElement;
@@ -8,8 +10,8 @@ export class CardPreview extends CardProduct {
   protected descriptionElement: HTMLElement;
   protected buttonElement: HTMLButtonElement;
   //Конструктор компонента предварительного просмотра
-  constructor(container: HTMLElement, actions?: ICardActions) {
-    super(container, actions);
+  constructor(container: HTMLElement, protected events: IEvents) {
+    super(container);
     // Получаем DOM‑элементы внутри карточки
     this.descriptionElement = ensureElement(".card__text", this.container);
     this.imageElement = ensureElement(
@@ -20,6 +22,9 @@ export class CardPreview extends CardProduct {
       ".card__button",
       this.container
     ) as HTMLButtonElement;
+    this.buttonElement.addEventListener("click", () => {
+      this.events.emit("preview:click");
+    });
     this.categoryElement = ensureElement(".card__category", this.container);
   }
   //Сеттер для установки описания товара
@@ -28,12 +33,13 @@ export class CardPreview extends CardProduct {
   }
   //Сеттер для установки изображения товара
   set image(value: string) {
-    const alt = this.titleElement.textContent || "";
+    const alt = this.titleEl.textContent || "";
     this.setImage(this.imageElement, value, alt);
   }
   //Сеттер для установки текста кнопки действия
-  set button(value: string) {
-    this.setText(this.buttonElement, value);
+  button(value: string, boolean: boolean) {
+    this.buttonElement.textContent = value;
+    this.buttonElement.disabled = boolean;
   }
 
   set category(value: categoryProduct) {
